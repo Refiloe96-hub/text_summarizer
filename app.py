@@ -88,11 +88,48 @@ with app.app_context():
 # Set the maximum allowed upload size to 100 MB
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
 
-model_name = "google/pegasus-cnn_dailymail"
-tokenizer = PegasusTokenizer.from_pretrained(model_name)
+from google.cloud import storage
+import os
 
+MODEL_DIR = os.path.join(BASE_DIR, 'models_dir')
+if not os.path.exists(MODEL_DIR):
+    os.makedirs(MODEL_DIR)
+
+credentials_path = os.path.join(BASE_DIR, 'premium-student-402620-299cd6f8fc7d.json')
+
+# Define the function to download from GCS
+def download_model_from_gcs(bucket_name, source_blob_prefix, destination_dir):
+    try:
+        storage_client = storage.Client.from_service_account_json(credentials_path, project="premium-student-402620")
+        bucket = storage_client.get_bucket(bucket_name)
+        blobs = storage_client.list_blobs(bucket_name, prefix=source_blob_prefix)
+        
+        for blob in blobs:
+            # Creating the full local filepath
+            local_file_path = os.path.join(destination_dir, blob.name)
+            
+            # Creating directories if they do not exist
+            local_dir = os.path.dirname(local_file_path)
+            if not os.path.exists(local_dir):
+                os.makedirs(local_dir)
+            
+            # Downloading the file
+            blob.download_to_filename(local_file_path)
+            print(f"{blob.name} downloaded to {local_file_path}.")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+
+# Download model files from GCS
+bucket_name = 'text_summarizer_model'
+model_files_prefix = 'huggingface/hub/models--google--pegasus-cnn_dailymail'
+download_model_from_gcs(bucket_name, model_files_prefix, MODEL_DIR)
+
+# Load the Pegasus tokenizer and model
+model_name = os.path.join(MODEL_DIR, model_files_prefix)
+tokenizer = PegasusTokenizer.from_pretrained(model_name)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model = PegasusForConditionalGeneration.from_pretrained(model_name).to(device)
+
 
 def get_remote_address():
     return request.headers.get('X-Forwarded-For', request.remote_addr)
