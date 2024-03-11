@@ -1,0 +1,129 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+h2, h4 {
+    color: var(--heading-color);
+}
+
+.btn-primary {
+    background-color: var(--btn-bg-color);
+    border-color: var(--btn-border-color);
+    color: var(--btn-text-color);
+}
+
+.form-label {
+    font-weight: 600;
+}
+
+/* Default to light theme */
+:root {
+    --bg-color: white;
+    --text-color: black;
+    --btn-bg-color: #007BFF;  /* Bootstrap primary color */
+    --btn-border-color: #007BFF;
+    --btn-text-color: white;
+    --heading-color: #333;
+    --table-border-color: #dee2e6;
+}
+
+/* Dark theme styles */
+[data-theme="dark"] {
+    --bg-color: #2c2c2c;  /* Dark gray */
+    --text-color: white;
+    --btn-bg-color: #BB86FC;  /* Light purple */
+    --btn-border-color: #BB86FC;
+    --btn-text-color: black;
+    --heading-color: white;
+    --table-border-color: #555; /* Darker border color for visibility */
+}
+
+/* Ensure all inputs and textareas have correct colors in dark mode */
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] .form-control {
+    background-color: #404040;
+    color: white;
+    border-color: white;
+}
+
+/* Placeholder color */
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* Panel styles */
+[data-theme="dark"] .p-3 {
+    background-color: #404040;
+    border-color: white;
+}
+
+/* Table styles */
+[data-theme="dark"] .table.table-bordered.table-hover {
+    background-color: #404040;
+    border-color: var(--table-border-color);
+}
+
+/* Link and navbar brand colors */
+[data-theme="dark"] a,
+[data-theme="dark"] .navbar-brand,
+[data-theme="dark"] h2,
+[data-theme="dark"] h4 {
+    color: white;
+}
+
+/* Make the summary container position relative so it can contain absolute elements */
+.summary-container {
+    position: relative;
+    /* other styles */
+}
+
+/* Absolutely position the copy icon at the bottom right of the summary container */
+#copyIcon {
+    position: absolute;
+    bottom: 10px; /* adjust the value as needed */
+    right: 10px; /* adjust the value as needed */
+    cursor: pointer;
+    font-size: 1.25rem;
+}
+
+/* Adjust the summary text padding to ensure it doesn't go under the icon */
+#summaryText {
+    padding-right: 40px; /* add right padding to make space for the icon */
+    /* other styles */
+}
+
+/* Correct the color of table cells */
+[data-theme="dark"] td {
+    background-color: #2c2c2c; /* Dark gray */
+    color: white;
+}
+
+/* Ensuring button outlines are visible */
+.btn-outline-light {
+    border-color: white;
+}
+
+[data-theme="dark"] .btn-outline-light {
+    border-color: #BB86FC; /* Light purple border in dark mode */
+}
+
+/* Table hover styles in light theme */
+.table-hover tbody tr:hover {
+    background-color: #f5f5f5; /* Light gray for hover */
+    color: black; /* Ensuring text color is black */
+}
+
+/* Table hover styles in dark theme */
+[data-theme="dark"] .table-hover tbody tr:hover {
+    background-color: #3a3a3a; /* Slightly lighter dark shade for hover */
+    color: white; /* Keeping text color white for visibility */
+}
+
+/* Ensuring text color in table cells is consistent during hover */
+.table-hover tbody tr:hover td {
+    color: inherit; /* Inherits color from the row */
+}
