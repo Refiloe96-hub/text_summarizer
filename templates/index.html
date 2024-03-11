@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+     <!-- Bootstrap CSS -->
+     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="static/styles.css">
+
+    <!-- Toastr CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+
+    <!-- Toastr JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    
+    <title>TEXT SUMMARIZATION</title>
+
+    <!-- Check for fetch support and load polyfill if needed -->
+    <script>
+        if (!window.fetch) {
+            console.log("Using Fetch Polyfill");
+            // Load the polyfill for `fetch`
+            document.write('<script src="path_to_fetch_polyfill.js"><\/script>');
+        }
+    </script>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">TEXT SUMMARIZATION</a>
+            <button id="themeToggle" class="btn btn-outline-light ms-3">Dark Mode</button>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="row justify-content-md-center">
+           
+            <div class="col-lg-8">
+                <form method="post" action="{{ url_for('text_summarization') }}" >
+                    <div class="form-group">
+                        <label for="inputtext_" class="form-label">Enter the text/Robot Populate Scrapped Text:</label>
+                        <textarea class="form-control" name="inputtext_" id="inputtext_" rows="10" style="resize: none;"></textarea>
+                    </div>
+                    <br>
+                    
+                    <button type="submit" class="btn btn-primary float-right">Text Summarization</button>
+                    
+                </form>
+                <a href="{{ url_for('history') }}" class="float-right mt-2">View Summarized Text History</a>
+                <form id="videoUploadForm" enctype="multipart/form-data" class="mt-4">
+                    <div id="dropZone" class="border border-dashed p-4 text-center mt-3">
+                        Drag & Drop files here or click to upload
+                        <!--<input type="file" name="file" id="file" accept="video/*" multiple style="display: none;">-->
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="file" class="form-label mt-2">Upload video file:</label>
+                        <input type="file" name="file" id="file" accept="video/*">
+                    </div>
+                    <div class="form-group mt-2">
+                        <input type="checkbox" name="compress" id="compress" checked>
+                        <label for="compress">Compress video before uploading</label>
+                    </div>
+                    <button type="button" id="uploadButton" class="btn btn-primary">Video Summarization</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="progressDiv" style="display: none;">
+        <div class="progress">
+            <div id="uploadProgressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+        </div>
+    </div>
+       
+    <!-- External Libraries -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+
+    <!-- Custom Scripts -->
+    <script src="static/scripts.js"></script>   
+    
+    <!--<script src="static/ffmp4.js"></script>-->
+    
+    <!---->
+
+    <!-- This script does the following:
+    Reads the selected video file as an array buffer.
+    Compresses the video using ffmpeg.js.
+    Creates a new FormData object with the compressed video.
+    Sends the compressed video to the server using AJAX. -->
+<!-- The Script -->
+<script>
+    $(document).ready(function() {
+        // Constants
+        var MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB in bytes
+
+        // Initialize tooltips and apply the theme
+        applyTheme();
+        initializeToastr();
+
+        // Setup event handlers
+        setupEventHandlers();
+
+        function setupEventHandlers() {
+            $('#dropZone').click(function() {
+                $('#file').trigger('click');
+            });
+
+            $('#themeToggle').click(toggleTheme);
+
+            $('#uploadButton').click(startVideoProcessing);
+
+            var copyIcon = $('#copyIcon');
+            if (copyIcon.length) {
+                copyIcon.click(copyToClipboard);
+            }
+        }
+
+        function startVideoProcessing() {
+            var fileInput = $('#file')[0];
+            if (!fileInput.files.length) {
+                toastr.error('Please select a file to upload.');
+                return;
+            }
+
+            if (fileInput.files[0].size > MAX_FILE_SIZE) {
+                toastr.error('File size too large. Maximum allowed size is 100MB.');
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            uploadVideo(formData);
+        }
+
+
+        function uploadVideo(formData) {
+            $('#progressDiv').show();
+
+            $.ajax({
+                url: '{{ url_for("video_upload") }}',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                xhr: function() {
+                    var xhr = new window.XMLHttpRequest();
+                    xhr.upload.addEventListener("progress", function(evt) {
+                        if (evt.lengthComputable) {
+                            var percentComplete = evt.loaded / evt.total;
+                            percentComplete = parseInt(percentComplete * 100);
+                            $('#uploadProgressBar').css('width', percentComplete + '%').attr('aria-valuenow', percentComplete).text(percentComplete + '%');
+                            if (percentComplete === 100) {
+                                toastr.info('Upload complete. Processing video...');
+                            }
+                        }
+                    }, false);
+                    return xhr;
+                },
+                success: function(response) {
+                    handleSuccessResponse(response);
+                },
+                error: function() {
+                    $('#progressDiv').hide();
+                    toastr.error('Error uploading video. Please try again.');
+                }
+            });
+        }
+
+        function handleSuccessResponse(response) {
+            $('#progressDiv').hide();
+            if (response.success) {
+                // If 'response.message' is not provided, 'Transcription saved successfully!' will be used.
+                toastr.success(response.message || 'Transcription saved successfully!');
+                // Additional code to handle and display the summary and topics
+                displaySummary(response.summary, response.topics);
+            } else {
+                // If 'response.error' is not provided, a generic error message will be used.
+                toastr.error(response.error || 'An error occurred during the processing.');
+            }
+        }
+
+        function displaySummary(summary, topics) {
+            $('#summaryArea').text(summary);
+            let topicsList = topics.map(topic => `<li>${topic}</li>`).join('');
+            $('#topicsArea').html(topicsList);
+            // Optionally, navigate to the output page or update the current page's content
+        }
+
+        function applyTheme() {
+            var currentTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            $('#themeToggle').text(currentTheme === 'dark' ? 'Light Mode' : 'Dark Mode');
+        }
+
+        function toggleTheme() {
+            var currentTheme = document.documentElement.getAttribute('data-theme');
+            var newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            $('#themeToggle').text(newTheme === 'dark' ? 'Light Mode' : 'Dark Mode');
+        }
+
+        function copyToClipboard() {
+            var textArea = $("<textarea>");
+            textArea.val($('#summaryText').text());
+            $('body').append(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            textArea.remove();
+            toastr.success('Summary copied to clipboard!');
+        }
+
+        function displaySummary(summary, topics) {
+            $('#summaryArea').text(summary);
+            var topicsList = topics.map(function(topic) {
+                return '<li>' + topic + '</li>';
+            }).join('');
+            $('#topicsArea').html(topicsList);
+        }
+
+        function initializeToastr() {
+            toastr.options = {
+                "closeButton": true,
+                "debug": false,
+                "newestOnTop": false,
+                "progressBar": false,
+                "positionClass": "toast-top-right",
+                "preventDuplicates": false,
+                "onclick": null,
+                "showDuration": "300",
+                "hideDuration": "1000",
+                "timeOut": "3000",
+                "extendedTimeOut": "1000",
+                "showEasing": "swing",
+                "hideEasing": "linear",
+                "showMethod": "fadeIn",
+                "hideMethod": "fadeOut"
+            };
+        }
+    });
+</script>
+
+</body>
+</html>
